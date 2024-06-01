@@ -97,6 +97,8 @@ class m_star:
                 continue
             else:
                 self.closed.add(state)
+            if state.config == ((5, 0), (1, 3), (1, 2), (1, 0)):
+                print("oh hou")
 
             # get neighbours of a
             Sngh = self.get_neighbours(state)
@@ -264,6 +266,8 @@ class m_star:
         # check swap collision
         for i, v_i in enumerate(state.config):
             for j, v_j in enumerate(s.config):
+                if i == j:
+                    continue
                 if v_i == v_j and state.config[j] == s.config[i]:
                     C_i.add(i)
                     C_i.add(j)
@@ -286,6 +290,8 @@ class m_star:
         """
         if len(C_i) != 0:
             return False
+        if s.config == ((4, 0), (1, 2), (1, 1), (2, 0)):
+            print("oh hou")
         s_before = self.Explored.get(s.config)
         if s_before is None:
             self.Explored[s.config] = s
