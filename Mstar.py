@@ -19,6 +19,10 @@ class joint_Node:
         self.parent = parent
         self.g = g
 
+    def __lt__(self, other):
+        # when they have v(self) = v(others) we have to use dominance
+        return self.g < other.g
+
     def __hash__(self):
         # 将states转换为元组，然后计算其哈希值
         state_tuple = self.config
@@ -38,7 +42,7 @@ class m_star:
         self.graph = graph
         self.v_init = start_points  # initial configuration
         self.v_f = end_points  # goals configuration
-        self.S_init = joint_Node(start_points, None, 0, set(), set())
+        self.S_init = joint_Node(start_points, None, 0)
         self.dist_table, self.policy_table = self.generate_distable()  # set up h value table and policy table
         self.collision_set = dict()
         self.backprop = dict()
@@ -82,6 +86,7 @@ class m_star:
         self.closed = set()
         self.Explored = dict()
         heapq.heappush(self.Open, (self.S_init.g + self.get_h(self.S_init), self.S_init))
+        self.collision_set[self.S_init] = set()
         self.Explored[self.S_init.config] = self.S_init
 
         while len(self.Open) > 0:
@@ -97,9 +102,9 @@ class m_star:
             Sngh = self.get_neighbours(state)
             for s in Sngh:
                 self.Add_toBackprop(state, s)
-                C_i = self.collision_detect(s)
+                C_i = self.collision_detect(s, state)
                 self.UnionColset(s,C_i)
-                self.backprop(state, C_i)
+                self.backPropagation(state, C_i)
 
                 if self.compare(s, C_i):
                     heapq.heappush(self.Open, (s.g + self.get_h(s), s))
@@ -126,6 +131,7 @@ class m_star:
         while s_curr.parent is not None:
             path.append(s_curr.config)
             s_curr = s_curr.parent
+        path.append(s_curr.config)
         reversed_list = list(reversed(path))
         return reversed_list
 
@@ -153,7 +159,7 @@ class m_star:
         Snghstates = self.insert_neigh(new_tuple, Snghstate, state)
         Sngh = []
         for states in Snghstates:
-            Sngh.append(joint_Node(states, state, state.g + self.get_edge(state.config, states)))
+            Sngh.append(joint_Node(tuple(states), state, state.g + self.get_edge(state.config, states)))
         return Sngh
 
     def get_policy(self, agent, vertex):
@@ -240,13 +246,13 @@ class m_star:
                   range(num_parts)]
         return result
 
-    def collision_detect(self, state):
+    def collision_detect(self,s, state):
         """
         Return a collision set
         """
         Occupied = dict()
         C_i = set()
-        for index, v in enumerate(state.config):
+        for index, v in enumerate(s.config):
             if Occupied.get(v) is None:
                 Occupied[v] = set()
                 Occupied[v].add(index)
@@ -254,6 +260,13 @@ class m_star:
                 C_i.add(index)
                 for i in Occupied.get(v):
                     C_i.add(i)
+
+        # check swap collision
+        for i, v_i in enumerate(state.config):
+            for j, v_j in enumerate(s.config):
+                if v_i == v_j and state.config[j] == s.config[i]:
+                    C_i.add(i)
+                    C_i.add(j)
         return C_i
 
     def UnionColset(self, s, C_i):
