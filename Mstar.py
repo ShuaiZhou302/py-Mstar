@@ -97,10 +97,8 @@ class m_star:
                 continue
             else:
                 self.closed.add(state)
-            if state.config == ((5, 0), (1, 3), (1, 2), (1, 0)):
-                print("oh hou")
 
-            # get neighbours of a
+            # get neighbours of a state
             Sngh = self.get_neighbours(state)
             for s in Sngh:
                 self.Add_toBackprop(state, s)
@@ -290,8 +288,6 @@ class m_star:
         """
         if len(C_i) != 0:
             return False
-        if s.config == ((4, 0), (1, 2), (1, 1), (2, 0)):
-            print("oh hou")
         s_before = self.Explored.get(s.config)
         if s_before is None:
             self.Explored[s.config] = s
@@ -299,6 +295,8 @@ class m_star:
         else:
             if s.g < s_before.g:
                 self.Explored[s.config] = s
+                if s_before in self.closed:
+                    self.closed.remove(s_before)
                 return True
             return False
 
