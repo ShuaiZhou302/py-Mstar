@@ -21,13 +21,17 @@ class joint_Node:
 
     def __lt__(self, other):
         # when they have v(self) = v(others) we have to use dominance
-        return self.g < other.g
+        return self.g + self.h < other.g + other.h
 
     def __hash__(self):
         # 将states转换为元组，然后计算其哈希值
         state_tuple = self.config
         return hash(state_tuple)
+    def __eq__(self, other):
+        return self.config == other.config
 
+    def set_h(self, h):
+        self.h = h
 
 class m_star:
     def __init__(self, graph, start_points, end_points):
@@ -46,6 +50,7 @@ class m_star:
         self.dist_table, self.policy_table = self.generate_distable()  # set up h value table and policy table
         self.collision_set = dict()
         self.backprop = dict()
+        self.S_init.set_h(self.get_h(self.S_init))
 
     def generate_distable(self):
         """
@@ -85,13 +90,17 @@ class m_star:
         self.Open = []
         self.closed = set()
         self.Explored = dict()
-        heapq.heappush(self.Open, (self.S_init.g + self.get_h(self.S_init), self.S_init))
+        #heapq.heappush(self.Open, (self.S_init.g + self.get_h(self.S_init), self.S_init))
+        heapq.heappush(self.Open, self.S_init)
         self.collision_set[self.S_init] = set()
         self.Explored[self.S_init.config] = self.S_init
 
         while len(self.Open) > 0:
-            f, state = heapq.heappop(self.Open)
+            #f, state = heapq.heappop(self.Open)
+            state = heapq.heappop(self.Open)
             if state.config == self.v_f:
+                print("Well done bruh, here's ur order:")
+                print(f"the path cost is {state.g}")
                 return self.back_track(state)
             if state in self.closed:
                 continue
@@ -103,11 +112,12 @@ class m_star:
             for s in Sngh:
                 self.Add_toBackprop(state, s)
                 C_i = self.collision_detect(s, state)
-                self.UnionColset(s,C_i)
+                self.UnionColset(s, C_i)
                 self.backPropagation(state, C_i)
 
                 if self.compare(s, C_i):
-                    heapq.heappush(self.Open, (s.g + self.get_h(s), s))
+                    #heapq.heappush(self.Open, (s.g + self.get_h(s), s))
+                    heapq.heappush(self.Open, s)
 
         print("So sorry bruh, it just fail")
         return None
@@ -159,7 +169,9 @@ class m_star:
         Snghstates = self.insert_neigh(new_tuple, Snghstate, state)
         Sngh = []
         for states in Snghstates:
-            Sngh.append(joint_Node(tuple(states), state, state.g + self.get_edge(state.config, states)))
+            joint_state = joint_Node(tuple(states), state, state.g + self.get_edge(state.config, states))
+            joint_state.set_h(self.get_h(state))
+            Sngh.append(joint_state)
         return Sngh
 
     def get_policy(self, agent, vertex):
@@ -174,7 +186,7 @@ class m_star:
         """
         if self.IsSubset(C_k, self.collision_set.get(s)):
             return
-        self.UnionColset(s,C_k)
+        self.UnionColset(s, C_k)
         self.reopen(s)
 
         if s.config == self.v_init:
@@ -192,7 +204,9 @@ class m_star:
         """
         Reinsert one node to open set
         """
-        heapq.heappush(self.Open, (s.g + self.get_h(s), s))
+        #heapq.heappush(self.Open, (s.g + self.get_h(s), s))
+        if s not in self.Open:
+            heapq.heappush(self.Open, s)
         if s in self.closed:
             self.closed.remove(s)
 
