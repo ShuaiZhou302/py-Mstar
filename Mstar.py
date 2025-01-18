@@ -100,7 +100,7 @@ class m_star:
             state = heapq.heappop(self.Open)
             if state.config == self.v_f:
                 print("Well done bruh, here's ur order:")
-                print(f"the path cost is {state.g}")
+                print(f"the path cost is {state.gtoy_test.py}")
                 return self.back_track(state)
             if state in self.closed:
                 continue
